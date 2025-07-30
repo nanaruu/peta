@@ -32,26 +32,27 @@
 <div id="map"></div>
 
 <script>
-  var map = L.map('map').setView([-6.9, 107.6], 11);
+  var map = L.map('map');
 
-  // Peta dasar OSM
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
   }).addTo(map);
 
-  // Warna berdasarkan nilai Cov_Drone
+  let boundsAOI, boundsToponimi;
+
+  // Fungsi untuk warna berdasarkan Cov_Drone
   function getColorByCovDrone(value) {
     switch (value) {
-      case "Sudah": return "#28a745"; // Hijau
-      case "Belum": return "#dc3545"; // Merah
-      case "Sebagian": return "#ffc107"; // Kuning
-      default: return "#6c757d"; // Abu-abu
+      case "Sudah": return "#28a745";
+      case "Belum": return "#dc3545";
+      case "Sebagian": return "#ffc107";
+      default: return "#6c757d";
     }
   }
 
-  // Tambahkan layer poligon AOI
+  // AOI Poligon
   shp("https://raw.githubusercontent.com/nanaruu/peta/main/aoi_t3.zip").then(function(geojson) {
-    L.geoJSON(geojson, {
+    const layer = L.geoJSON(geojson, {
       style: function (feature) {
         var cov = feature.properties?.Cov_Drone || "Unknown";
         return {
@@ -66,11 +67,14 @@
         layer.bindPopup(`<strong>Cov_Drone:</strong> ${cov}`);
       }
     }).addTo(map);
+
+    boundsAOI = layer.getBounds();
+    fitToAllLayers();
   });
 
-  // Tambahkan layer titik Toponimi
+  // Titik Toponimi
   shp("https://raw.githubusercontent.com/nanaruu/peta/main/toponimi.zip").then(function(geojson) {
-    L.geoJSON(geojson, {
+    const layer = L.geoJSON(geojson, {
       pointToLayer: function (feature, latlng) {
         return L.circleMarker(latlng, {
           radius: 6,
@@ -91,7 +95,18 @@
         });
       }
     }).addTo(map);
+
+    boundsToponimi = layer.getBounds();
+    fitToAllLayers();
   });
+
+  // Fungsi gabungkan bounding box dari AOI & Toponimi
+  function fitToAllLayers() {
+    if (boundsAOI && boundsToponimi) {
+      var combined = boundsAOI.extend(boundsToponimi);
+      map.fitBounds(combined);
+    }
+  }
 </script>
 
 </body>
