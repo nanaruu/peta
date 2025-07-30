@@ -1,14 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Peta Shapefile dari GitHub</title>
+  <title>Peta Toponimi</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  
-  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
   <!-- shp.js untuk membaca shapefile ZIP -->
@@ -18,6 +16,11 @@
     #map {
       height: 100vh;
     }
+    .label-text {
+      font-size: 12px;
+      font-weight: bold;
+      color: darkblue;
+    }
   </style>
 </head>
 <body>
@@ -25,22 +28,41 @@
 <div id="map"></div>
 
 <script>
-  // Inisialisasi peta
-  var map = L.map('map').setView([-6.9, 107.6], 10); // Atur ke lokasi umum
+  var map = L.map('map').setView([-6.9, 107.6], 10);
 
-  // Tambahkan basemap OSM
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
   }).addTo(map);
 
-  // Load shapefile ZIP dari GitHub raw link
+  // Load shapefile dari GitHub (raw link)
   shp("https://raw.githubusercontent.com/nanaruu/peta/main/toponimi.zip")
     .then(function(geojson) {
       var layer = L.geoJSON(geojson, {
+        pointToLayer: function (feature, latlng) {
+          // Simbol lingkaran
+          return L.circleMarker(latlng, {
+            radius: 6,
+            fillColor: "#0078FF",
+            color: "#000",
+            weight: 1,
+            opacity: 1,
+            fillOpacity: 0.8
+          });
+        },
         onEachFeature: function (feature, layer) {
-          var props = feature.properties;
-          var popup = Object.keys(props).map(k => `<strong>${k}</strong>: ${props[k]}`).join("<br>");
-          layer.bindPopup(popup);
+          if (feature.properties && feature.properties.namobj) {
+            // Tambahkan popup
+            layer.bindPopup(`<strong>${feature.properties.namobj}</strong>`);
+
+            // Tambahkan label tetap di samping titik
+            var label = L.marker(layer.getLatLng(), {
+              icon: L.divIcon({
+                className: 'label-text',
+                html: feature.properties.namobj,
+                iconAnchor: [0, -10]
+              })
+            }).addTo(map);
+          }
         }
       }).addTo(map);
 
