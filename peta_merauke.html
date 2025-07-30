@@ -5,17 +5,12 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
-  <!-- shp.js -->
   <script src="https://unpkg.com/shpjs@latest/dist/shp.min.js"></script>
 
   <style>
-    #map {
-      height: 100vh;
-    }
+    #map { height: 100vh; }
     .leaflet-div-icon {
       background: transparent !important;
       border: none !important;
@@ -32,8 +27,6 @@
       white-space: nowrap;
       pointer-events: none;
     }
-
-    /* Legend CSS */
     .legend {
       background: white;
       padding: 6px 8px;
@@ -63,22 +56,49 @@
     attribution: '© OpenStreetMap contributors'
   }).addTo(map);
 
-  // Fungsi warna Cov_Drone 0/1
   function getColorByCovDrone(value) {
     if (value === 1 || value === '1') return "#28a745";    // Hijau - Sudah
     if (value === 0 || value === '0') return "#dc3545";    // Merah - Belum
     return "#6c757d"; // Abu-abu default
   }
 
-  let boundsAOI = null;
+  let layerAOI = null;
+  let layerToponimi = null;
+  let labelLayerGroup = L.layerGroup().addTo(map);
+  let layerControl = null;
 
-  // LayerGroup untuk poligon AOI dan titik Toponimi
-  let layerAOI, layerToponimi, labelLayerGroup;
+  function addLayerControl() {
+    if (!layerAOI || !layerToponimi) return;
 
-  // Load AOI poligon
+    if (layerControl) {
+      map.removeControl(layerControl);
+    }
+
+    layerControl = L.control.layers({
+      "Area AOI (Cov_Drone)": layerAOI,
+      "Titik Toponimi": layerToponimi
+    }, {}, {collapsed: false}).addTo(map);
+  }
+
+  function addLegend() {
+    var legend = L.control({position: 'bottomright'});
+
+    legend.onAdd = function(map) {
+      var div = L.DomUtil.create('div', 'legend');
+      div.innerHTML += '<b>Legenda Cov_Drone</b><br>';
+      div.innerHTML += '<i style="background:#28a745"></i>Sudah<br>';
+      div.innerHTML += '<i style="background:#dc3545"></i>Belum<br>';
+      div.innerHTML += '<i style="background:#6c757d"></i>Lainnya<br>';
+      return div;
+    };
+
+    legend.addTo(map);
+  }
+
+  // Load AOI shapefile
   shp("https://raw.githubusercontent.com/nanaruu/peta/main/aoi_t3.zip").then(function(geojson) {
     layerAOI = L.geoJSON(geojson, {
-      style: function (feature) {
+      style: function(feature) {
         var cov = feature.properties?.Cov_Drone;
         return {
           color: "#000",
@@ -87,22 +107,24 @@
           fillOpacity: 0.5
         };
       },
-      onEachFeature: function (feature, layer) {
+      onEachFeature: function(feature, layer) {
         var cov = feature.properties?.Cov_Drone;
         layer.bindPopup(`<strong>Cov_Drone:</strong> ${cov}`);
       }
     }).addTo(map);
 
-    boundsAOI = layerAOI.getBounds();
-    if (boundsAOI) map.fitBounds(boundsAOI.pad(0.05));
+    // Zoom ke AOI setelah layerAOI siap
+    const bounds = layerAOI.getBounds();
+    if (bounds.isValid()) {
+      map.fitBounds(bounds.pad(0.05));
+    }
 
-    addLayerControl();  // Buat control layer setelah AOI dimuat
+    addLayerControl();
     addLegend();
-  });
+  }).catch(e => console.error('Error loading AOI:', e));
 
-  // Load titik Toponimi
+  // Load toponimi shapefile
   shp("https://raw.githubusercontent.com/nanaruu/peta/main/toponimi.zip").then(function(geojson) {
-    labelLayerGroup = L.layerGroup().addTo(map);
     layerToponimi = L.geoJSON(geojson, {
       pointToLayer: function(feature, latlng) {
         return L.circleMarker(latlng, {
@@ -118,6 +140,7 @@
         var nama = feature.properties?.NAMOBJ || "Tanpa Nama";
         layer.bindPopup(`<strong>${nama}</strong>`);
 
+        // Label khusus untuk tiap titik
         var label = L.marker(layer.getLatLng(), {
           icon: L.divIcon({
             className: 'label-text',
@@ -130,39 +153,8 @@
       }
     }).addTo(map);
 
-    // Update layer control jika sudah ada layerAOI
-    if (layerAOI) addLayerControl();
-  });
-
-  // Fungsi buat Layer Control aktif/nonaktifkan layer AOI & titik saja (label tidak dimasukkan)
-  function addLayerControl() {
-    if (!layerAOI || !layerToponimi) return;
-
-    if (map.layerControl) {
-      map.removeControl(map.layerControl);
-    }
-
-    map.layerControl = L.control.layers({
-      "Area AOI (Cov_Drone)": layerAOI,
-      "Titik Toponimi": layerToponimi
-    }, {}, {collapsed: false}).addTo(map);
-  }
-
-  // Fungsi buat legend warna Cov_Drone (hanya untuk poligon AOI)
-  function addLegend() {
-    var legend = L.control({position: 'bottomright'});
-
-    legend.onAdd = function(map) {
-      var div = L.DomUtil.create('div', 'legend');
-      div.innerHTML += '<b>Legenda Cov_Drone</b><br>';
-      div.innerHTML += '<i style="background:#28a745"></i>Sudah<br>';
-      div.innerHTML += '<i style="background:#dc3545"></i>Belum<br>';
-      div.innerHTML += '<i style="background:#6c757d"></i>Lainnya<br>';
-      return div;
-    };
-
-    legend.addTo(map);
-  }
+    addLayerControl();
+  }).catch(e => console.error('Error loading Toponimi:', e));
 </script>
 
 </body>
