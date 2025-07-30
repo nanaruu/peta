@@ -5,14 +5,25 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <!-- shp.js untuk load shapefile ZIP -->
   <script src="https://unpkg.com/shpjs@latest/dist/shp.min.js"></script>
 
   <style>
     #map {
       height: 100vh;
     }
+
+    /* Hilangkan callout panah pada divIcon */
+    .leaflet-div-icon {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+
     .label-text {
       font-size: 12px;
       font-weight: bold;
@@ -22,7 +33,7 @@
       border-radius: 3px;
       border: 1px solid #ccc;
       white-space: nowrap;
-      pointer-events: none; /* agar label tidak tangkap event mouse */
+      pointer-events: none; /* supaya label tidak tangkap event mouse */
     }
   </style>
 </head>
@@ -39,20 +50,17 @@
 
   let boundsAOI = null;
 
-  // Warna poligon Cov_Drone
+  // Fungsi warna berdasarkan Cov_Drone
   function getColorByCovDrone(value) {
     switch (value) {
-      case "Sudah": return "#28a745";
-      case "Belum": return "#dc3545";
-      case "Sebagian": return "#ffc107";
-      default: return "#6c757d";
+      case "Sudah": return "#28a745";     // hijau
+      case "Belum": return "#dc3545";     // merah
+      case "Sebagian": return "#ffc107";  // kuning
+      default: return "#6c757d";          // abu-abu
     }
   }
 
-  // Layer group khusus untuk label toponimi
-  const labelLayerGroup = L.layerGroup().addTo(map);
-
-  // Load AOI poligon
+  // Load poligon AOI dan zoom ke bounds AOI
   shp("https://raw.githubusercontent.com/nanaruu/peta/main/aoi_t3.zip").then(function(geojson) {
     const layerAOI = L.geoJSON(geojson, {
       style: function (feature) {
@@ -77,8 +85,10 @@
     }
   });
 
-  // Load toponimi titik
+  // Load titik Toponimi dengan label tanpa callout
   shp("https://raw.githubusercontent.com/nanaruu/peta/main/toponimi.zip").then(function(geojson) {
+    const labelLayerGroup = L.layerGroup().addTo(map);
+
     L.geoJSON(geojson, {
       pointToLayer: function(feature, latlng) {
         return L.circleMarker(latlng, {
@@ -94,14 +104,14 @@
         var nama = feature.properties?.NAMOBJ || "Tanpa Nama";
         layer.bindPopup(`<strong>${nama}</strong>`);
 
-        // Buat label sebagai marker divIcon dan tambahkan ke labelLayerGroup
+        // Label sebagai marker divIcon tanpa panah
         var label = L.marker(layer.getLatLng(), {
           icon: L.divIcon({
             className: 'label-text',
             html: nama,
             iconAnchor: [0, -15]
           }),
-          interactive: false // supaya label tidak menangkap klik/hover
+          interactive: false
         });
         labelLayerGroup.addLayer(label);
       }
