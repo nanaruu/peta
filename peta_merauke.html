@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Peta Toponimi & AOI dengan Legend & Layer Control</title>
+  <title>Peta Toponimi & AOI dengan Layer Checkbox</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -50,9 +50,11 @@
 <div id="map"></div>
 
 <script>
+  // Buat peta tanpa tile dulu, tile akan dimasukkan di baseMaps
   var map = L.map('map');
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  // Basemap OSM
+  var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
   }).addTo(map);
 
@@ -67,6 +69,7 @@
   let labelLayerGroup = L.layerGroup().addTo(map);
   let layerControl = null;
 
+  // Fungsi buat Layer Control dengan baseMaps & overlayMaps
   function addLayerControl() {
     if (!layerAOI || !layerToponimi) return;
 
@@ -74,12 +77,19 @@
       map.removeControl(layerControl);
     }
 
-    layerControl = L.control.layers({
+    var baseMaps = {
+      "OpenStreetMap": osmLayer
+    };
+
+    var overlayMaps = {
       "Area AOI (Cov_Drone)": layerAOI,
       "Titik Toponimi": layerToponimi
-    }, {}, {collapsed: false}).addTo(map);
+    };
+
+    layerControl = L.control.layers(baseMaps, overlayMaps, {collapsed: false}).addTo(map);
   }
 
+  // Fungsi buat legend Cov_Drone
   function addLegend() {
     var legend = L.control({position: 'bottomright'});
 
@@ -113,7 +123,6 @@
       }
     }).addTo(map);
 
-    // Zoom ke AOI setelah layerAOI siap
     const bounds = layerAOI.getBounds();
     if (bounds.isValid()) {
       map.fitBounds(bounds.pad(0.05));
@@ -123,7 +132,7 @@
     addLegend();
   }).catch(e => console.error('Error loading AOI:', e));
 
-  // Load toponimi shapefile
+  // Load titik Toponimi
   shp("https://raw.githubusercontent.com/nanaruu/peta/main/toponimi.zip").then(function(geojson) {
     layerToponimi = L.geoJSON(geojson, {
       pointToLayer: function(feature, latlng) {
@@ -140,7 +149,6 @@
         var nama = feature.properties?.NAMOBJ || "Tanpa Nama";
         layer.bindPopup(`<strong>${nama}</strong>`);
 
-        // Label khusus untuk tiap titik
         var label = L.marker(layer.getLatLng(), {
           icon: L.divIcon({
             className: 'label-text',
@@ -155,6 +163,7 @@
 
     addLayerControl();
   }).catch(e => console.error('Error loading Toponimi:', e));
+
 </script>
 
 </body>
