@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Peta KML Leaflet</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+  <!-- Leaflet JavaScript -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <!-- Leaflet Omnivore for KML support -->
+  <script src="https://api.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.3.4/leaflet-omnivore.min.js"></script>
+
+  <style>
+    #map {
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<script>
+  // Inisialisasi peta
+  var map = L.map('map').setView([-6.9, 107.6], 10); // Sesuaikan pusat peta dengan lokasi AOI
+
+  // Tambahkan base layer
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  // Tambahkan layer KML dari GitHub raw
+  omnivore.kml('https://raw.githubusercontent.com/nanaruu/peta/main/aoi_t3.kml')
+    .on('ready', function () {
+      map.fitBounds(this.getBounds());
+    })
+    .addTo(map);
+</script>
+
+</body>
+</html>
