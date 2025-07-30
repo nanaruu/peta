@@ -5,26 +5,24 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Leaflet -->
+  <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-  <!-- shp.js -->
+  <!-- shp.js untuk load shapefile ZIP -->
   <script src="https://unpkg.com/shpjs@latest/dist/shp.min.js"></script>
 
   <style>
     #map {
       height: 100vh;
     }
-
-    /* Label titik transparan */
     .label-text {
       font-size: 12px;
       font-weight: bold;
       color: darkblue;
       padding: 1px 3px;
-      /* background-color: rgba(255, 255, 255, 0.5); */ /* Jika ingin semi-transparan */
-      /* border: 1px solid #ccc; */
+      /* background-color: rgba(255, 255, 255, 0);  transparan */
+      /* border: none; */
     }
   </style>
 </head>
@@ -35,11 +33,13 @@
 <script>
   var map = L.map('map');
 
+  // Basemap OpenStreetMap
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
   }).addTo(map);
 
-  let boundsAOI, boundsToponimi;
+  let boundsAOI = null;
+  let boundsToponimi = null;
 
   // Fungsi warna berdasarkan Cov_Drone
   function getColorByCovDrone(value) {
@@ -51,9 +51,9 @@
     }
   }
 
-  // AOI Poligon
+  // Load poligon AOI dan set zoom ke bounds AOI
   shp("https://raw.githubusercontent.com/nanaruu/peta/main/aoi_t3.zip").then(function(geojson) {
-    const layer = L.geoJSON(geojson, {
+    const layerAOI = L.geoJSON(geojson, {
       style: function (feature) {
         var cov = feature.properties?.Cov_Drone || "Unknown";
         return {
@@ -69,13 +69,17 @@
       }
     }).addTo(map);
 
-    boundsAOI = layer.getBounds();
-    fitToAllLayers();
+    boundsAOI = layerAOI.getBounds();
+
+    // Zoom hanya ke AOI
+    if (boundsAOI) {
+      map.fitBounds(boundsAOI.pad(0.05)); // padding 5%
+    }
   });
 
-  // Titik Toponimi
+  // Load titik Toponimi
   shp("https://raw.githubusercontent.com/nanaruu/peta/main/toponimi.zip").then(function(geojson) {
-    const layer = L.geoJSON(geojson, {
+    const layerToponimi = L.geoJSON(geojson, {
       pointToLayer: function (feature, latlng) {
         return L.circleMarker(latlng, {
           radius: 6,
@@ -96,18 +100,7 @@
         });
       }
     }).addTo(map);
-
-    boundsToponimi = layer.getBounds();
-    fitToAllLayers();
   });
-
-  // Fungsi untuk zoom ke seluruh data setelah kedua layer termuat
-  function fitToAllLayers() {
-    if (boundsAOI && boundsToponimi) {
-      var combined = boundsAOI.extend(boundsToponimi);
-      map.fitBounds(combined);
-    }
-  }
 </script>
 
 </body>
