@@ -5,11 +5,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
-  <!-- shp.js untuk load shapefile ZIP -->
   <script src="https://unpkg.com/shpjs@latest/dist/shp.min.js"></script>
 
   <style>
@@ -20,9 +17,12 @@
       font-size: 12px;
       font-weight: bold;
       color: darkblue;
-      padding: 1px 3px;
-      /* background-color: rgba(255, 255, 255, 0);  transparan */
-      /* border: none; */
+      background: rgba(255,255,255,0.8);
+      padding: 1px 4px;
+      border-radius: 3px;
+      border: 1px solid #ccc;
+      white-space: nowrap;
+      pointer-events: none; /* agar label tidak tangkap event mouse */
     }
   </style>
 </head>
@@ -33,25 +33,26 @@
 <script>
   var map = L.map('map');
 
-  // Basemap OpenStreetMap
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
   }).addTo(map);
 
   let boundsAOI = null;
-  let boundsToponimi = null;
 
-  // Fungsi warna berdasarkan Cov_Drone
+  // Warna poligon Cov_Drone
   function getColorByCovDrone(value) {
     switch (value) {
-      case "Sudah": return "#28a745";     // hijau
-      case "Belum": return "#dc3545";     // merah
-      case "Sebagian": return "#ffc107";  // kuning
-      default: return "#6c757d";          // abu-abu
+      case "Sudah": return "#28a745";
+      case "Belum": return "#dc3545";
+      case "Sebagian": return "#ffc107";
+      default: return "#6c757d";
     }
   }
 
-  // Load poligon AOI dan set zoom ke bounds AOI
+  // Layer group khusus untuk label toponimi
+  const labelLayerGroup = L.layerGroup().addTo(map);
+
+  // Load AOI poligon
   shp("https://raw.githubusercontent.com/nanaruu/peta/main/aoi_t3.zip").then(function(geojson) {
     const layerAOI = L.geoJSON(geojson, {
       style: function (feature) {
@@ -71,16 +72,15 @@
 
     boundsAOI = layerAOI.getBounds();
 
-    // Zoom hanya ke AOI
     if (boundsAOI) {
-      map.fitBounds(boundsAOI.pad(0.05)); // padding 5%
+      map.fitBounds(boundsAOI.pad(0.05));
     }
   });
 
-  // Load titik Toponimi
+  // Load toponimi titik
   shp("https://raw.githubusercontent.com/nanaruu/peta/main/toponimi.zip").then(function(geojson) {
-    const layerToponimi = L.geoJSON(geojson, {
-      pointToLayer: function (feature, latlng) {
+    L.geoJSON(geojson, {
+      pointToLayer: function(feature, latlng) {
         return L.circleMarker(latlng, {
           radius: 6,
           fillColor: "#0078FF",
@@ -90,14 +90,20 @@
           fillOpacity: 0.85
         });
       },
-      onEachFeature: function (feature, layer) {
+      onEachFeature: function(feature, layer) {
         var nama = feature.properties?.NAMOBJ || "Tanpa Nama";
         layer.bindPopup(`<strong>${nama}</strong>`);
-        layer.bindTooltip(nama, {
-          permanent: true,
-          direction: 'top',
-          className: 'label-text'
+
+        // Buat label sebagai marker divIcon dan tambahkan ke labelLayerGroup
+        var label = L.marker(layer.getLatLng(), {
+          icon: L.divIcon({
+            className: 'label-text',
+            html: nama,
+            iconAnchor: [0, -15]
+          }),
+          interactive: false // supaya label tidak menangkap klik/hover
         });
+        labelLayerGroup.addLayer(label);
       }
     }).addTo(map);
   });
