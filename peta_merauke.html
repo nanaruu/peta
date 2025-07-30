@@ -1,16 +1,21 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Peta Toponimi & AOI</title>
+  <title>Peta Toponimi & AOI dengan Legend & Layer Control</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <!-- shp.js -->
   <script src="https://unpkg.com/shpjs@latest/dist/shp.min.js"></script>
 
   <style>
-    #map { height: 100vh; }
+    #map {
+      height: 100vh;
+    }
     .leaflet-div-icon {
       background: transparent !important;
       border: none !important;
@@ -27,6 +32,24 @@
       white-space: nowrap;
       pointer-events: none;
     }
+
+    /* Legend CSS */
+    .legend {
+      background: white;
+      padding: 6px 8px;
+      font: 14px Arial, Helvetica, sans-serif;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      border-radius: 5px;
+      line-height: 18px;
+      color: #555;
+    }
+    .legend i {
+      width: 18px;
+      height: 18px;
+      float: left;
+      margin-right: 8px;
+      opacity: 0.7;
+    }
   </style>
 </head>
 <body>
@@ -40,16 +63,21 @@
     attribution: '© OpenStreetMap contributors'
   }).addTo(map);
 
-  let boundsAOI = null;
-
+  // Fungsi warna Cov_Drone 0/1
   function getColorByCovDrone(value) {
-    if (value === 1 || value === '1') return "#28a745";    // Sudah - hijau
-    if (value === 0 || value === '0') return "#dc3545";    // Belum - merah
-    return "#6c757d"; // abu-abu default
+    if (value === 1 || value === '1') return "#28a745";    // Hijau - Sudah
+    if (value === 0 || value === '0') return "#dc3545";    // Merah - Belum
+    return "#6c757d"; // Abu-abu default
   }
 
+  let boundsAOI = null;
+
+  // LayerGroup untuk poligon AOI dan titik Toponimi
+  let layerAOI, layerToponimi, labelLayerGroup;
+
+  // Load AOI poligon
   shp("https://raw.githubusercontent.com/nanaruu/peta/main/aoi_t3.zip").then(function(geojson) {
-    const layerAOI = L.geoJSON(geojson, {
+    layerAOI = L.geoJSON(geojson, {
       style: function (feature) {
         var cov = feature.properties?.Cov_Drone;
         return {
@@ -66,16 +94,16 @@
     }).addTo(map);
 
     boundsAOI = layerAOI.getBounds();
+    if (boundsAOI) map.fitBounds(boundsAOI.pad(0.05));
 
-    if (boundsAOI) {
-      map.fitBounds(boundsAOI.pad(0.05));
-    }
+    addLayerControl();  // Pastikan layer control dibuat setelah layerAOI ada
+    addLegend();
   });
 
+  // Load titik Toponimi
   shp("https://raw.githubusercontent.com/nanaruu/peta/main/toponimi.zip").then(function(geojson) {
-    const labelLayerGroup = L.layerGroup().addTo(map);
-
-    L.geoJSON(geojson, {
+    labelLayerGroup = L.layerGroup().addTo(map);
+    layerToponimi = L.geoJSON(geojson, {
       pointToLayer: function(feature, latlng) {
         return L.circleMarker(latlng, {
           radius: 6,
@@ -101,7 +129,43 @@
         labelLayerGroup.addLayer(label);
       }
     }).addTo(map);
+
+    // Jika layer control sudah dibuat, update layer group ke control
+    if (layerAOI) addLayerControl();
   });
+
+  // Fungsi untuk buat Layer Control (aktif/nonaktif layer)
+  function addLayerControl() {
+    if (!layerAOI || !layerToponimi) return;
+
+    // Jika control sudah ada, hapus dulu supaya tidak duplikat
+    if (map.layerControl) {
+      map.removeControl(map.layerControl);
+    }
+
+    map.layerControl = L.control.layers({
+      "Area AOI (Cov_Drone)": layerAOI,
+      "Titik Toponimi": layerToponimi
+    }, {
+      "Label Titik": labelLayerGroup
+    }, {collapsed: false}).addTo(map);
+  }
+
+  // Fungsi buat legend warna Cov_Drone
+  function addLegend() {
+    var legend = L.control({position: 'bottomright'});
+
+    legend.onAdd = function(map) {
+      var div = L.DomUtil.create('div', 'legend');
+      div.innerHTML += '<b>Legenda Cov_Drone</b><br>';
+      div.innerHTML += '<i style="background:#28a745"></i>Sudah<br>';
+      div.innerHTML += '<i style="background:#dc3545"></i>Belum<br>';
+      div.innerHTML += '<i style="background:#6c757d"></i>Lainnya<br>';
+      return div;
+    };
+
+    legend.addTo(map);
+  }
 </script>
 
 </body>
