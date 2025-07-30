@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Peta Toponimi</title>
+  <title>Peta Toponimi & AOI</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -34,23 +34,58 @@
 <script>
   var map = L.map('map').setView([-6.9, 107.6], 10);
 
-  // Tambahkan basemap OSM
+  // Base layer
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
   }).addTo(map);
 
-  // Load shapefile dari GitHub (.zip) → konversi ke GeoJSON
+  // Warna berdasarkan nilai Cov_Drone
+  function getColorByCovDrone(value) {
+    switch (value) {
+      case "Sudah": return "#28a745"; // Hijau
+      case "Belum": return "#dc3545"; // Merah
+      case "Sebagian": return "#ffc107"; // Kuning
+      default: return "#6c757d"; // Abu-abu
+    }
+  }
+
+  // Tambahkan layer poligon AOI dari aoi_t3.zip
+  shp("https://raw.githubusercontent.com/nanaruu/peta/main/aoi_t3.zip")
+    .then(function(geojson) {
+      var aoiLayer = L.geoJSON(geojson, {
+        style: function (feature) {
+          var cov = feature.properties?.Cov_Drone || "Unknown";
+          return {
+            color: "#000",
+            weight: 1,
+            fillColor: getColorByCovDrone(cov),
+            fillOpacity: 0.5
+          };
+        },
+        onEachFeature: function (feature, layer) {
+          var cov = feature.properties?.Cov_Drone || "Unknown";
+          layer.bindPopup(`<strong>Cov_Drone:</strong> ${cov}`);
+        }
+      }).addTo(map);
+    });
+
+  // Tambahkan layer titik toponimi dari toponimi.zip
   shp("https://raw.githubusercontent.com/nanaruu/peta/main/toponimi.zip")
     .then(function(geojson) {
       var toponimiLayer = L.geoJSON(geojson, {
+        pointToLayer: function (feature, latlng) {
+          return L.circleMarker(latlng, {
+            radius: 6,
+            fillColor: "#0078FF",
+            color: "#000",
+            weight: 1,
+            opacity: 1,
+            fillOpacity: 0.85
+          });
+        },
         onEachFeature: function (feature, layer) {
-          // Pastikan properti NAMOBJ ada
           var nama = feature.properties?.NAMOBJ || "Tanpa Nama";
-
-          // Popup saat diklik
           layer.bindPopup(`<strong>${nama}</strong>`);
-
-          // Tambahkan label tetap sebagai divIcon
           if (feature.geometry && feature.geometry.type === "Point") {
             L.marker(layer.getLatLng(), {
               icon: L.divIcon({
@@ -60,25 +95,8 @@
               })
             }).addTo(map);
           }
-        },
-        pointToLayer: function (feature, latlng) {
-          // Ganti marker jadi lingkaran
-          return L.circleMarker(latlng, {
-            radius: 6,
-            fillColor: "#0078FF",
-            color: "#000",
-            weight: 1,
-            opacity: 1,
-            fillOpacity: 0.85
-          });
         }
       }).addTo(map);
-
-      // Zoom ke semua fitur
-      map.fitBounds(toponimiLayer.getBounds());
-    })
-    .catch(function(err) {
-      console.error("Gagal memuat shapefile:", err);
     });
 </script>
 
