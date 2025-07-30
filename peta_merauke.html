@@ -156,4 +156,14 @@
       var div = L.DomUtil.create('div', 'legend');
       div.innerHTML += '<b>Legenda Cov_Drone</b><br>';
       div.innerHTML += '<i style="background:#28a745"></i>Sudah<br>';
-      div.innerHTML += '<i s
+      div.innerHTML += '<i style="background:#dc3545"></i>Belum<br>';
+      div.innerHTML += '<i style="background:#6c757d"></i>Lainnya<br>';
+      return div;
+    };
+
+    legend.addTo(map);
+  }
+</script>
+
+</body>
+</html>
