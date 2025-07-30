@@ -8,10 +8,10 @@
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
-  <!-- Leaflet JavaScript -->
+  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-  <!-- Leaflet Omnivore for KML support -->
+  <!-- Omnivore plugin for KML support -->
   <script src="https://api.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.3.4/leaflet-omnivore.min.js"></script>
 
   <style>
@@ -25,17 +25,15 @@
 <div id="map"></div>
 
 <script>
-  // Inisialisasi peta
-  var map = L.map('map').setView([-6.9, 107.6], 10); // Sesuaikan pusat peta dengan lokasi AOI
+  var map = L.map('map').setView([-6.9, 107.6], 10); // Sesuaikan lokasi
 
-  // Tambahkan base layer
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
 
-  // Tambahkan layer KML dari GitHub raw
+  // Load KML layer
   omnivore.kml('https://raw.githubusercontent.com/nanaruu/peta/main/aoi_t3.kml')
-    .on('ready', function () {
+    .on('ready', function() {
       map.fitBounds(this.getBounds());
     })
     .addTo(map);
