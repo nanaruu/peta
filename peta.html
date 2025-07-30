@@ -5,11 +5,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Leaflet CSS -->
+  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-  <!-- shp.js untuk membaca shapefile ZIP -->
+  <!-- shp.js -->
   <script src="https://unpkg.com/shpjs@latest/dist/shp.min.js"></script>
 
   <style>
@@ -20,6 +20,10 @@
       font-size: 12px;
       font-weight: bold;
       color: darkblue;
+      background: white;
+      padding: 2px 4px;
+      border-radius: 3px;
+      box-shadow: 0 0 2px rgba(0,0,0,0.3);
     }
   </style>
 </head>
@@ -30,15 +34,35 @@
 <script>
   var map = L.map('map').setView([-6.9, 107.6], 10);
 
+  // Tambahkan basemap OSM
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
   }).addTo(map);
 
-  // Load shapefile ZIP dari GitHub (raw link)
+  // Load shapefile dari GitHub (.zip) → konversi ke GeoJSON
   shp("https://raw.githubusercontent.com/nanaruu/peta/main/toponimi.zip")
     .then(function(geojson) {
-      var layer = L.geoJSON(geojson, {
+      var toponimiLayer = L.geoJSON(geojson, {
+        onEachFeature: function (feature, layer) {
+          // Pastikan properti NAMOBJ ada
+          var nama = feature.properties?.NAMOBJ || "Tanpa Nama";
+
+          // Popup saat diklik
+          layer.bindPopup(`<strong>${nama}</strong>`);
+
+          // Tambahkan label tetap sebagai divIcon
+          if (feature.geometry && feature.geometry.type === "Point") {
+            L.marker(layer.getLatLng(), {
+              icon: L.divIcon({
+                className: 'label-text',
+                html: nama,
+                iconAnchor: [0, -15]
+              })
+            }).addTo(map);
+          }
+        },
         pointToLayer: function (feature, latlng) {
+          // Ganti marker jadi lingkaran
           return L.circleMarker(latlng, {
             radius: 6,
             fillColor: "#0078FF",
@@ -47,28 +71,14 @@
             opacity: 1,
             fillOpacity: 0.85
           });
-        },
-        onEachFeature: function (feature, layer) {
-          if (feature.properties && feature.properties.NAMOBJ) {
-            // Tampilkan popup
-            layer.bindPopup(`<strong>${feature.properties.NAMOBJ}</strong>`);
-
-            // Tambahkan label tetap (divIcon)
-            var label = L.marker(layer.getLatLng(), {
-              icon: L.divIcon({
-                className: 'label-text',
-                html: feature.properties.NAMOBJ,
-                iconAnchor: [0, -10]
-              })
-            }).addTo(map);
-          }
         }
       }).addTo(map);
 
-      map.fitBounds(layer.getBounds());
+      // Zoom ke semua fitur
+      map.fitBounds(toponimiLayer.getBounds());
     })
-    .catch(function(error) {
-      console.error("Gagal memuat shapefile:", error);
+    .catch(function(err) {
+      console.error("Gagal memuat shapefile:", err);
     });
 </script>
 
