@@ -34,31 +34,30 @@
     attribution: '© OpenStreetMap contributors'
   }).addTo(map);
 
-  // Load shapefile dari GitHub (raw link)
+  // Load shapefile ZIP dari GitHub (raw link)
   shp("https://raw.githubusercontent.com/nanaruu/peta/main/toponimi.zip")
     .then(function(geojson) {
       var layer = L.geoJSON(geojson, {
         pointToLayer: function (feature, latlng) {
-          // Simbol lingkaran
           return L.circleMarker(latlng, {
             radius: 6,
             fillColor: "#0078FF",
             color: "#000",
             weight: 1,
             opacity: 1,
-            fillOpacity: 0.8
+            fillOpacity: 0.85
           });
         },
         onEachFeature: function (feature, layer) {
-          if (feature.properties && feature.properties.namobj) {
-            // Tambahkan popup
-            layer.bindPopup(`<strong>${feature.properties.namobj}</strong>`);
+          if (feature.properties && feature.properties.NAMOBJ) {
+            // Tampilkan popup
+            layer.bindPopup(`<strong>${feature.properties.NAMOBJ}</strong>`);
 
-            // Tambahkan label tetap di samping titik
+            // Tambahkan label tetap (divIcon)
             var label = L.marker(layer.getLatLng(), {
               icon: L.divIcon({
                 className: 'label-text',
-                html: feature.properties.namobj,
+                html: feature.properties.NAMOBJ,
                 iconAnchor: [0, -10]
               })
             }).addTo(map);
