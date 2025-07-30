@@ -96,7 +96,7 @@
     boundsAOI = layerAOI.getBounds();
     if (boundsAOI) map.fitBounds(boundsAOI.pad(0.05));
 
-    addLayerControl();  // Pastikan layer control dibuat setelah layerAOI ada
+    addLayerControl();  // Buat control layer setelah AOI dimuat
     addLegend();
   });
 
@@ -130,15 +130,14 @@
       }
     }).addTo(map);
 
-    // Jika layer control sudah dibuat, update layer group ke control
+    // Update layer control jika sudah ada layerAOI
     if (layerAOI) addLayerControl();
   });
 
-  // Fungsi untuk buat Layer Control (aktif/nonaktif layer)
+  // Fungsi buat Layer Control aktif/nonaktifkan layer AOI & titik saja (label tidak dimasukkan)
   function addLayerControl() {
     if (!layerAOI || !layerToponimi) return;
 
-    // Jika control sudah ada, hapus dulu supaya tidak duplikat
     if (map.layerControl) {
       map.removeControl(map.layerControl);
     }
@@ -146,12 +145,10 @@
     map.layerControl = L.control.layers({
       "Area AOI (Cov_Drone)": layerAOI,
       "Titik Toponimi": layerToponimi
-    }, {
-      "Label Titik": labelLayerGroup
-    }, {collapsed: false}).addTo(map);
+    }, {}, {collapsed: false}).addTo(map);
   }
 
-  // Fungsi buat legend warna Cov_Drone
+  // Fungsi buat legend warna Cov_Drone (hanya untuk poligon AOI)
   function addLegend() {
     var legend = L.control({position: 'bottomright'});
 
@@ -159,14 +156,4 @@
       var div = L.DomUtil.create('div', 'legend');
       div.innerHTML += '<b>Legenda Cov_Drone</b><br>';
       div.innerHTML += '<i style="background:#28a745"></i>Sudah<br>';
-      div.innerHTML += '<i style="background:#dc3545"></i>Belum<br>';
-      div.innerHTML += '<i style="background:#6c757d"></i>Lainnya<br>';
-      return div;
-    };
-
-    legend.addTo(map);
-  }
-</script>
-
-</body>
-</html>
+      div.innerHTML += '<i s
