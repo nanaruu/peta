@@ -21,9 +21,9 @@
       font-weight: bold;
       color: darkblue;
       background: white;
-      padding: 2px 4px;
+      padding: 1px 3px;
       border-radius: 3px;
-      box-shadow: 0 0 2px rgba(0,0,0,0.3);
+      border: 1px solid #ccc;
     }
   </style>
 </head>
@@ -32,9 +32,9 @@
 <div id="map"></div>
 
 <script>
-  var map = L.map('map').setView([-6.9, 107.6], 10);
+  var map = L.map('map').setView([-6.9, 107.6], 11);
 
-  // Base layer
+  // Peta dasar OSM
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
   }).addTo(map);
@@ -49,55 +49,49 @@
     }
   }
 
-  // Tambahkan layer poligon AOI dari aoi_t3.zip
-  shp("https://raw.githubusercontent.com/nanaruu/peta/main/aoi_t3.zip")
-    .then(function(geojson) {
-      var aoiLayer = L.geoJSON(geojson, {
-        style: function (feature) {
-          var cov = feature.properties?.Cov_Drone || "Unknown";
-          return {
-            color: "#000",
-            weight: 1,
-            fillColor: getColorByCovDrone(cov),
-            fillOpacity: 0.5
-          };
-        },
-        onEachFeature: function (feature, layer) {
-          var cov = feature.properties?.Cov_Drone || "Unknown";
-          layer.bindPopup(`<strong>Cov_Drone:</strong> ${cov}`);
-        }
-      }).addTo(map);
-    });
+  // Tambahkan layer poligon AOI
+  shp("https://raw.githubusercontent.com/nanaruu/peta/main/aoi_t3.zip").then(function(geojson) {
+    L.geoJSON(geojson, {
+      style: function (feature) {
+        var cov = feature.properties?.Cov_Drone || "Unknown";
+        return {
+          color: "#000",
+          weight: 1,
+          fillColor: getColorByCovDrone(cov),
+          fillOpacity: 0.5
+        };
+      },
+      onEachFeature: function (feature, layer) {
+        var cov = feature.properties?.Cov_Drone || "Unknown";
+        layer.bindPopup(`<strong>Cov_Drone:</strong> ${cov}`);
+      }
+    }).addTo(map);
+  });
 
-  // Tambahkan layer titik toponimi dari toponimi.zip
-  shp("https://raw.githubusercontent.com/nanaruu/peta/main/toponimi.zip")
-    .then(function(geojson) {
-      var toponimiLayer = L.geoJSON(geojson, {
-        pointToLayer: function (feature, latlng) {
-          return L.circleMarker(latlng, {
-            radius: 6,
-            fillColor: "#0078FF",
-            color: "#000",
-            weight: 1,
-            opacity: 1,
-            fillOpacity: 0.85
-          });
-        },
-        onEachFeature: function (feature, layer) {
-          var nama = feature.properties?.NAMOBJ || "Tanpa Nama";
-          layer.bindPopup(`<strong>${nama}</strong>`);
-          if (feature.geometry && feature.geometry.type === "Point") {
-            L.marker(layer.getLatLng(), {
-              icon: L.divIcon({
-                className: 'label-text',
-                html: nama,
-                iconAnchor: [0, -15]
-              })
-            }).addTo(map);
-          }
-        }
-      }).addTo(map);
-    });
+  // Tambahkan layer titik Toponimi
+  shp("https://raw.githubusercontent.com/nanaruu/peta/main/toponimi.zip").then(function(geojson) {
+    L.geoJSON(geojson, {
+      pointToLayer: function (feature, latlng) {
+        return L.circleMarker(latlng, {
+          radius: 6,
+          fillColor: "#0078FF",
+          color: "#000",
+          weight: 1,
+          opacity: 1,
+          fillOpacity: 0.85
+        });
+      },
+      onEachFeature: function (feature, layer) {
+        var nama = feature.properties?.NAMOBJ || "Tanpa Nama";
+        layer.bindPopup(`<strong>${nama}</strong>`);
+        layer.bindTooltip(nama, {
+          permanent: true,
+          direction: 'top',
+          className: 'label-text'
+        });
+      }
+    }).addTo(map);
+  });
 </script>
 
 </body>
