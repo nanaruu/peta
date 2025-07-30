@@ -16,14 +16,15 @@
     #map {
       height: 100vh;
     }
+
+    /* Label titik transparan */
     .label-text {
       font-size: 12px;
       font-weight: bold;
       color: darkblue;
-      /*background: white;*/
       padding: 1px 3px;
-      border-radius: 3px;
-      border: 1px solid #ccc;
+      /* background-color: rgba(255, 255, 255, 0.5); */ /* Jika ingin semi-transparan */
+      /* border: 1px solid #ccc; */
     }
   </style>
 </head>
@@ -40,13 +41,13 @@
 
   let boundsAOI, boundsToponimi;
 
-  // Fungsi untuk warna berdasarkan Cov_Drone
+  // Fungsi warna berdasarkan Cov_Drone
   function getColorByCovDrone(value) {
     switch (value) {
-      case "Sudah": return "#28a745";
-      case "Belum": return "#dc3545";
-      case "Sebagian": return "#ffc107";
-      default: return "#6c757d";
+      case "Sudah": return "#28a745";     // hijau
+      case "Belum": return "#dc3545";     // merah
+      case "Sebagian": return "#ffc107";  // kuning
+      default: return "#6c757d";          // abu-abu
     }
   }
 
@@ -100,7 +101,7 @@
     fitToAllLayers();
   });
 
-  // Fungsi gabungkan bounding box dari AOI & Toponimi
+  // Fungsi untuk zoom ke seluruh data setelah kedua layer termuat
   function fitToAllLayers() {
     if (boundsAOI && boundsToponimi) {
       var combined = boundsAOI.extend(boundsToponimi);
